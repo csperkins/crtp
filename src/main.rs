@@ -1,18 +1,16 @@
 // ================================================================================================
 
-type SSRC         = u32;
-type RtpTimestamp = u32;
-type NtpTimestamp = u64;
+struct SSRC(u32);
+struct RtpTimestamp(u32);
+struct NtpTimestamp(u64);
 
-#[deriving(Clone)]
 struct SenderInfo {
-  ntp_ts : NtpTimestamp,
-  rtp_ts : RtpTimestamp,
+  ntp_ts     : NtpTimestamp,
+  rtp_ts     : RtpTimestamp,
   pckt_count : u32,
   byte_count : u32
 }
 
-#[deriving(Clone)]
 struct ReportBlock {
   ssrc       : SSRC,
   fract_lost : u8,
@@ -23,27 +21,24 @@ struct ReportBlock {
   dlsr       : u32
 }
 
-#[deriving(Clone)]
-struct SdesItem {
-  item_type : u8,
-  item_text : String
-}
-
-#[deriving(Clone)]
 struct SdesChunk {
   ssrc  : SSRC,
-  items : Vec<SdesItem>
+  cname : Option<String>,
+  name  : Option<String>,
+  email : Option<String>,
+  phone : Option<String>,
+  loc   : Option<String>,
+  tool  : Option<String>,
+  note  : Option<String>
 }
 
-#[deriving(Clone)]
 enum PacketRTCP {
-  PacketSR(SSRC, Vec<ReportBlock>, SenderInfo),
-  PacketRR(SSRC, Vec<ReportBlock>),
-  PacketSDES(Vec<SdesChunk>),
-  PacketBye(Vec<SSRC>, String),
+  SR(SSRC, Vec<ReportBlock>, SenderInfo),
+  RR(SSRC, Vec<ReportBlock>),
+  SDES(Vec<SdesChunk>),
+  BYE(Vec<SSRC>, String),
 }
 
-#[deriving(Clone)]
 enum Packet {
   PacketRTP,
   PacketCompoundRTCP(Vec<PacketRTCP>)
