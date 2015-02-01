@@ -1,3 +1,7 @@
+extern crate "rustc-serialize" as rustc_serialize;
+
+use rustc_serialize::{Encodable, Encoder};
+
 // ================================================================================================
 
 const CRTP_VERSION : &'static str = env!("CARGO_PKG_VERSION");
@@ -7,10 +11,16 @@ struct RtpTimestamp(u32);
 struct NtpTimestamp(u64);
 
 struct SenderInfo {
-  ntp_ts     : NtpTimestamp,
-  rtp_ts     : RtpTimestamp,
+  ntp_ts     : u32, // FIXME: should be NtpTimestamp,
+  rtp_ts     : u32, // FIXME: should be RtpTimestamp,
   pckt_count : u32,
   byte_count : u32
+}
+
+impl Encodable for SenderInfo {
+  fn encode<S : Encoder>(&self, encoder : &mut S) -> Result<(), S::Error> {
+    encoder.emit_u32(self.ntp_ts)
+  }
 }
 
 struct ReportBlock {
