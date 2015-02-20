@@ -138,27 +138,27 @@ impl RtpSocket {
 
 // ================================================================================================
 
-fn parse_sr(packet : &[u8]) -> Option<RtcpPacket> {
+fn parse_sr(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
   unimplemented!();
   None
 }
 
-fn parse_rr(packet : &[u8]) -> Option<RtcpPacket> {
+fn parse_rr(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
   unimplemented!();
   None
 }
 
-fn parse_sdes(packet : &[u8]) -> Option<RtcpPacket> {
+fn parse_sdes(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
   unimplemented!();
   None
 }
 
-fn parse_bye(packet : &[u8]) -> Option<RtcpPacket> {
+fn parse_bye(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
   unimplemented!();
   None
 }
 
-fn parse_app(packet : &[u8]) -> Option<RtcpPacket> {
+fn parse_app(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
   unimplemented!();
   None
 }
@@ -178,10 +178,10 @@ fn parse_rtcp_packet(buf : &mut [u8], buflen : usize) -> Option<CompoundRtcpPack
       return None;
     }
 
-    let v   = (buf[offset + 0] >> 6) & 0x03;
-    let p   = (buf[offset + 0] >> 5) & 0x01;
-    let rc  = (buf[offset + 0] >> 0) & 0x1f;
-    let pt  =  buf[offset + 1];
+    let v   =   (buf[offset + 0] >> 6) & 0x03;
+    let p   =  ((buf[offset + 0] >> 5) & 0x01) == 1;
+    let rc  =   (buf[offset + 0] >> 0) & 0x1f;
+    let pt  =    buf[offset + 1];
     let len = (((buf[offset + 2] as usize) << 8) & 0xff00) | 
               (((buf[offset + 3] as usize) << 0) & 0x0fff);
 
@@ -198,11 +198,11 @@ fn parse_rtcp_packet(buf : &mut [u8], buflen : usize) -> Option<CompoundRtcpPack
     let packet = &buf[offset..offset + (4 * (len + 1))];
 
     let parsed_packet = match pt {
-      200 =>   parse_sr(packet),
-      201 =>   parse_rr(packet),
-      202 => parse_sdes(packet),
-      203 =>  parse_bye(packet),
-      204 =>  parse_app(packet),
+      200 =>   parse_sr(p, rc, len, packet),
+      201 =>   parse_rr(p, rc, len, packet),
+      202 => parse_sdes(p, rc, len, packet),
+      203 =>  parse_bye(p, rc, len, packet),
+      204 =>  parse_app(p, rc, len, packet),
       _   => {
         println!("parse_rtcp_packet: unknown packet type (pt={})", pt);
         return None;
