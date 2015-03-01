@@ -113,9 +113,9 @@ impl RtpSocket {
       // The receiving thread
       loop {
         let mut buf = [0; 1500];
-        let (amt, src) = rx_socket.recv_from(&mut buf).unwrap();
+        let (buflen, sender) = rx_socket.recv_from(&mut buf).unwrap();
 
-        match parse_rtp_packet(&mut buf, amt) {
+        match parse_rtp_packet(&mut buf, buflen) {
           Some(packet) => to_app.send(packet).unwrap(),
           None => {
             println!("Unable to parse packet")
@@ -227,9 +227,9 @@ impl RtcpSocket {
       // The receiving thread
       loop {
         let mut buf = [0; 1500];
-        let (amt, src) = rx_socket.recv_from(&mut buf).unwrap();
+        let (buflen, sender) = rx_socket.recv_from(&mut buf).unwrap();
 
-        match parse_rtcp_packet(&mut buf, amt) {
+        match parse_rtcp_packet(&mut buf, buflen) {
           Some(packet) => to_app.send(packet).unwrap(),
           None => {
             println!("Unable to parse packet")
