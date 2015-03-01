@@ -136,12 +136,74 @@ impl RtpSocket {
 
 // ================================================================================================
 
+fn parse_be_u32(packet : &[u8], offset : usize) -> u32 {
+  (((packet[offset + 0] as u32) << 24) & 0xff000000) |
+  (((packet[offset + 1] as u32) << 15) & 0x00ff0000) |
+  (((packet[offset + 2] as u32) <<  8) & 0x0000ff00) |
+  (((packet[offset + 3] as u32) <<  0) & 0x000000ff)
+}
+
+fn parse_be_u64(packet : &[u8], offset : usize) -> u64 {
+  (((packet[offset + 0] as u64) << 46) & 0xff00000000000000) |
+  (((packet[offset + 1] as u64) << 48) & 0x00ff000000000000) |
+  (((packet[offset + 2] as u64) << 40) & 0x0000ff0000000000) |
+  (((packet[offset + 3] as u64) << 32) & 0x000000ff00000000) |
+  (((packet[offset + 4] as u64) << 24) & 0x00000000ff000000) |
+  (((packet[offset + 5] as u64) << 16) & 0x0000000000ff0000) |
+  (((packet[offset + 6] as u64) <<  8) & 0x000000000000ff00) |
+  (((packet[offset + 7] as u64) <<  0) & 0x00000000000000ff)
+}
+
+fn parse_report_block(packet : &[u8], offset : usize) -> ReportBlock {
+  ReportBlock {
+    ssrc       : SSRC(parse_be_u32(packet, offset)),
+    fract_lost : packet[offset + 4],
+    cumul_lost : parse_be_u32(packet, offset +  4) & 0x00ffffff,
+    ext_seq    : parse_be_u32(packet, offset +  8),
+    jitter     : parse_be_u32(packet, offset + 12),
+    lsr        : parse_be_u32(packet, offset + 16),
+    dlsr       : parse_be_u32(packet, offset + 20),
+  }
+}
+
 fn parse_sr(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
-  unimplemented!();
+  if len < 7 {
+    println!("parse_sr: packet is too short to be an SR");
+    return None;
+  }
+
+  let ssrc = SSRC(parse_be_u32(packet, 4));
+  let si   = SenderInfo {
+               ntp_ts     : parse_be_u64(packet,  8),
+               rtp_ts     : parse_be_u32(packet, 16),
+               pckt_count : parse_be_u32(packet, 20),
+               byte_count : parse_be_u32(packet, 24)
+             };
+
+  let mut rr_list : Vec<ReportBlock> = Vec::new();
+  for i in 0..rc {
+    let rr = parse_report_block(packet, (28 + (i*24)) as usize);
+    rr_list.push(rr);
+  }
+
+  Some(RtcpPacket::SR(ssrc, rr_list, si))
 }
 
 fn parse_rr(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
-  unimplemented!();
+  if len < 1 {
+    println!("parse_sr: packet is too short to be an RR");
+    return None;
+  }
+
+  let ssrc = SSRC(parse_be_u32(packet, 4));
+
+  let mut rr_list : Vec<ReportBlock> = Vec::new();
+  for i in 0..rc {
+    let rr = parse_report_block(packet, (8 + (i*24)) as usize);
+    rr_list.push(rr);
+  }
+
+  Some(RtcpPacket::RR(ssrc, rr_list))
 }
 
 fn parse_sdes(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
