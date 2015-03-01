@@ -1,12 +1,10 @@
 #![feature(net)]
-#![feature(io)]
 #![feature(std_misc)]
 
-use std::thread::Thread;
+use std::thread;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::net::UdpSocket;
 use std::net::IpAddr;
-use std::old_io::Timer;
 use std::old_io::timer;
 use std::time::duration::Duration;
 
@@ -111,7 +109,7 @@ impl RtpSocket {
     let (to_app, from_net) = channel::<RtpPacket>();
     let (to_net, from_app) = channel::<RtpPacket>();
 
-    Thread::spawn(move || {
+    thread::spawn(move || {
       // The receiving thread
       loop {
         let mut buf = [0; 1500];
@@ -126,7 +124,7 @@ impl RtpSocket {
       }
     });
 
-    Thread::spawn(move || {
+    thread::spawn(move || {
       // The sending thread
       let packet = from_app.recv().unwrap();
       // FIXME: send the packet
@@ -140,27 +138,22 @@ impl RtpSocket {
 
 fn parse_sr(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
   unimplemented!();
-  None
 }
 
 fn parse_rr(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
   unimplemented!();
-  None
 }
 
 fn parse_sdes(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
   unimplemented!();
-  None
 }
 
 fn parse_bye(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
   unimplemented!();
-  None
 }
 
 fn parse_app(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
   unimplemented!();
-  None
 }
 
 fn parse_rtcp_packet(buf : &mut [u8], buflen : usize) -> Option<CompoundRtcpPacket> {
@@ -230,7 +223,7 @@ impl RtcpSocket {
     let (to_app, from_net) = channel::<CompoundRtcpPacket>();
     let (to_net, from_app) = channel::<CompoundRtcpPacket>();
 
-    Thread::spawn(move || {
+    thread::spawn(move || {
       // The receiving thread
       loop {
         let mut buf = [0; 1500];
@@ -245,7 +238,7 @@ impl RtcpSocket {
       }
     });
 
-    Thread::spawn(move || {
+    thread::spawn(move || {
       // The sending thread
       let packet = from_app.recv().unwrap();
       // FIXME: send the packet
