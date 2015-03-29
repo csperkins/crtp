@@ -1,10 +1,12 @@
+#![feature(ip_addr)]
 #![feature(net)]
 #![feature(std_misc)]
+#![feature(old_io)]
 
 use std::thread;
 use std::sync::mpsc::{channel, Sender, Receiver};
 use std::net::UdpSocket;
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
 use std::old_io::timer;
 use std::time::duration::Duration;
 
@@ -207,7 +209,24 @@ fn parse_rr(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket
 }
 
 fn parse_sdes(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
-  unimplemented!();
+  let mut offset = 4;
+  for i in 0..rc {
+    println!("sdes {}", offset);
+    let mut chunk = SdesChunk {
+                      ssrc  : SSRC(parse_be_u32(packet, offset)),
+                      cname : None,
+                      name  : None,
+                      email : None,
+                      phone : None,
+                      loc   : None,
+                      tool  : None,
+                      note  : None
+                    };
+
+    // FIXME: parse SDES chunks
+    // FIXME: add chunk to the packet
+  }
+  None  // FIXME: return an SDES packet
 }
 
 fn parse_bye(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket> {
@@ -260,7 +279,7 @@ fn parse_rtcp_packet(buf : &mut [u8], buflen : usize) -> Option<CompoundRtcpPack
       204 =>  parse_app(p, rc, len, packet),
       _   => {
         println!("parse_rtcp_packet: unknown packet type (pt={})", pt);
-        return None;
+        break;
       }
     };
 
@@ -315,10 +334,10 @@ impl RtcpSocket {
 fn main() {
   println!("CRTP v{}", CRTP_VERSION);
 
-  let rtp_socket  =  RtpSocket{local_addr: IpAddr::new_v4(0,0,0,0), local_port : 3000};
+  let rtp_socket  =  RtpSocket{local_addr: IpAddr::V4(Ipv4Addr::new(0,0,0,0)), local_port : 3000};
   let (rtp_tx, rtp_rx) = rtp_socket.run();
 
-  let rtcp_socket = RtcpSocket{local_addr: IpAddr::new_v4(0,0,0,0), local_port : 3001};
+  let rtcp_socket = RtcpSocket{local_addr: IpAddr::V4(Ipv4Addr::new(0,0,0,0)), local_port : 3001};
   let (rtcp_tx, rtcp_rx) = rtcp_socket.run();
 
   let session_parameters = RtpSessionParameters {
