@@ -1,18 +1,5 @@
-#![feature(ip_addr)]
-#![feature(net)]
-#![feature(std_misc)]
-#![feature(old_io)]
-
-use std::thread;
-use std::sync::mpsc::{channel, Sender, Receiver};
-use std::net::UdpSocket;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
-use std::old_io::timer;
-use std::time::duration::Duration;
 
 // ================================================================================================
-
-const CRTP_VERSION : &'static str = env!("CARGO_PKG_VERSION");
 
 struct SSRC(u32);
 struct RtpTimestamp(u32);
@@ -61,26 +48,17 @@ struct RtpPacket;
 
 // ================================================================================================
 
-struct RtpSessionParameters {
-  rtp_tx  :   Sender<RtpPacket>,
-  rtp_rx  : Receiver<RtpPacket>,
-  rtcp_tx :   Sender<CompoundRtcpPacket>,
-  rtcp_rx : Receiver<CompoundRtcpPacket>
-}
-
 struct RtpSessionStatistics {
   pckt_count : u64
 }
 
 struct RtpSession {
-  parameters : RtpSessionParameters,
   ssrc       : u32
 }
 
 impl RtpSession {
-  pub fn new(params : RtpSessionParameters) -> RtpSession {
+  pub fn new() -> RtpSession {
     RtpSession {
-      parameters : params,
       ssrc       : 0    // FIXME
     }
   }
@@ -96,44 +74,6 @@ impl RtpSession {
 fn parse_rtp_packet(buf : &mut [u8], buflen : usize) -> Option<RtpPacket> {
   println!("parse_rtp_packet");
   None
-}
-
-struct RtpSocket {
-  local_addr : IpAddr,
-  local_port : u16
-}
-
-impl RtpSocket {
-  pub fn run(&self) -> (Sender<RtpPacket>, Receiver<RtpPacket>) {
-    let rx_socket = UdpSocket::bind(&(self.local_addr, self.local_port)).unwrap();
-    let tx_socket = rx_socket.try_clone().unwrap();
-
-    let (to_app, from_net) = channel::<RtpPacket>();
-    let (to_net, from_app) = channel::<RtpPacket>();
-
-    thread::spawn(move || {
-      // The receiving thread
-      loop {
-        let mut buf = [0; 1500];
-        let (buflen, sender) = rx_socket.recv_from(&mut buf).unwrap();
-
-        match parse_rtp_packet(&mut buf, buflen) {
-          Some(packet) => to_app.send(packet).unwrap(),
-          None => {
-            println!("Unable to parse packet")
-          }
-        }
-      }
-    });
-
-    thread::spawn(move || {
-      // The sending thread
-      let packet = from_app.recv().unwrap();
-      // FIXME: send the packet
-    });
-
-    (to_net, from_net)
-  }
 }
 
 // ================================================================================================
@@ -291,67 +231,10 @@ fn parse_rtcp_packet(buf : &mut [u8], buflen : usize) -> Option<CompoundRtcpPack
   None  // FIXME: return the compound packet
 }
 
-struct RtcpSocket {
-  local_addr : IpAddr,
-  local_port : u16
-}
-
-impl RtcpSocket {
-  pub fn run(&self) -> (Sender<CompoundRtcpPacket>, Receiver<CompoundRtcpPacket>) {
-    let rx_socket = UdpSocket::bind(&(self.local_addr, self.local_port)).unwrap();
-    let tx_socket = rx_socket.try_clone().unwrap();
-
-    let (to_app, from_net) = channel::<CompoundRtcpPacket>();
-    let (to_net, from_app) = channel::<CompoundRtcpPacket>();
-
-    thread::spawn(move || {
-      // The receiving thread
-      loop {
-        let mut buf = [0; 1500];
-        let (buflen, sender) = rx_socket.recv_from(&mut buf).unwrap();
-
-        match parse_rtcp_packet(&mut buf, buflen) {
-          Some(packet) => to_app.send(packet).unwrap(),
-          None => {
-            println!("Unable to parse packet")
-          }
-        }
-      }
-    });
-
-    thread::spawn(move || {
-      // The sending thread
-      let packet = from_app.recv().unwrap();
-      // FIXME: send the packet
-    });
-
-    (to_net, from_net)
-  }
-}
 
 // ================================================================================================
 
 fn main() {
-  println!("CRTP v{}", CRTP_VERSION);
-
-  let rtp_socket  =  RtpSocket{local_addr: IpAddr::V4(Ipv4Addr::new(0,0,0,0)), local_port : 3000};
-  let (rtp_tx, rtp_rx) = rtp_socket.run();
-
-  let rtcp_socket = RtcpSocket{local_addr: IpAddr::V4(Ipv4Addr::new(0,0,0,0)), local_port : 3001};
-  let (rtcp_tx, rtcp_rx) = rtcp_socket.run();
-
-  let session_parameters = RtpSessionParameters {
-                             rtp_tx  : rtp_tx,
-                             rtp_rx  : rtp_rx,
-                             rtcp_tx : rtcp_tx,
-                             rtcp_rx : rtcp_rx
-                           };
-
-  let mut session = RtpSession::new(session_parameters);
-  let session_statistics = session.run();
-
-  timer::sleep(Duration::hours(1));
-
 }
 
 // ================================================================================================

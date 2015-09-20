@@ -4,6 +4,3 @@ name = "crtp"
 version = "0.0.1"
 authors = ["Colin Perkins <csp@csperkins.org>"]
 
-[dependencies]
-rustc-serialize = "0.3"
-
