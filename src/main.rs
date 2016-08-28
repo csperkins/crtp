@@ -1,3 +1,7 @@
+extern crate byteorder;
+
+use std::io::Cursor;
+use byteorder::*;
 
 // ================================================================================================
 
@@ -78,33 +82,15 @@ fn parse_rtp_packet(buf : &mut [u8], buflen : usize) -> Option<RtpPacket> {
 
 // ================================================================================================
 
-fn parse_be_u32(packet : &[u8], offset : usize) -> u32 {
-  (((packet[offset + 0] as u32) << 24) & 0xff000000) |
-  (((packet[offset + 1] as u32) << 15) & 0x00ff0000) |
-  (((packet[offset + 2] as u32) <<  8) & 0x0000ff00) |
-  (((packet[offset + 3] as u32) <<  0) & 0x000000ff)
-}
-
-fn parse_be_u64(packet : &[u8], offset : usize) -> u64 {
-  (((packet[offset + 0] as u64) << 46) & 0xff00000000000000) |
-  (((packet[offset + 1] as u64) << 48) & 0x00ff000000000000) |
-  (((packet[offset + 2] as u64) << 40) & 0x0000ff0000000000) |
-  (((packet[offset + 3] as u64) << 32) & 0x000000ff00000000) |
-  (((packet[offset + 4] as u64) << 24) & 0x00000000ff000000) |
-  (((packet[offset + 5] as u64) << 16) & 0x0000000000ff0000) |
-  (((packet[offset + 6] as u64) <<  8) & 0x000000000000ff00) |
-  (((packet[offset + 7] as u64) <<  0) & 0x00000000000000ff)
-}
-
 fn parse_report_block(packet : &[u8], offset : usize) -> ReportBlock {
   ReportBlock {
-    ssrc       : SSRC(parse_be_u32(packet, offset)),
+    ssrc       : SSRC(BigEndian::read_u32(&packet[offset..])),
     fract_lost : packet[offset + 4],
-    cumul_lost : parse_be_u32(packet, offset +  4) & 0x00ffffff,
-    ext_seq    : parse_be_u32(packet, offset +  8),
-    jitter     : parse_be_u32(packet, offset + 12),
-    lsr        : parse_be_u32(packet, offset + 16),
-    dlsr       : parse_be_u32(packet, offset + 20),
+    cumul_lost : BigEndian::read_u32(&packet[offset +  4..]) & 0x00ffffff,
+    ext_seq    : BigEndian::read_u32(&packet[offset +  8..]),
+    jitter     : BigEndian::read_u32(&packet[offset + 12..]),
+    lsr        : BigEndian::read_u32(&packet[offset + 16..]),
+    dlsr       : BigEndian::read_u32(&packet[offset + 20..]),
   }
 }
 
@@ -114,12 +100,12 @@ fn parse_sr(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket
     return None;
   }
 
-  let ssrc = SSRC(parse_be_u32(packet, 4));
+  let ssrc = SSRC(BigEndian::read_u32(&packet[4..7]));
   let si   = SenderInfo {
-               ntp_ts     : parse_be_u64(packet,  8),
-               rtp_ts     : parse_be_u32(packet, 16),
-               pckt_count : parse_be_u32(packet, 20),
-               byte_count : parse_be_u32(packet, 24)
+               ntp_ts     : BigEndian::read_u64(&packet[ 8..15]),
+               rtp_ts     : BigEndian::read_u32(&packet[16..19]),
+               pckt_count : BigEndian::read_u32(&packet[20..23]),
+               byte_count : BigEndian::read_u32(&packet[24..28])
              };
 
   let mut rr_list : Vec<ReportBlock> = Vec::new();
@@ -137,7 +123,7 @@ fn parse_rr(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPacket
     return None;
   }
 
-  let ssrc = SSRC(parse_be_u32(packet, 4));
+  let ssrc = SSRC(BigEndian::read_u32(&packet[4..7]));
 
   let mut rr_list : Vec<ReportBlock> = Vec::new();
   for i in 0..rc {
@@ -153,7 +139,7 @@ fn parse_sdes(p : bool, rc : u8, len : usize, packet : &[u8]) -> Option<RtcpPack
   for i in 0..rc {
     println!("sdes {}", offset);
     let mut chunk = SdesChunk {
-                      ssrc  : SSRC(parse_be_u32(packet, offset)),
+                      ssrc  : SSRC(BigEndian::read_u32(&packet[offset..])),
                       cname : None,
                       name  : None,
                       email : None,
