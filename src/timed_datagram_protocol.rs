@@ -26,13 +26,13 @@ use std::io::Result;
 use std::net::ToSocketAddrs;
 use std::time::{Duration, Instant};
 
-trait TimedDatagramProtocolSend {
+pub trait TimedDatagramProtocolSend {
   fn send_datagram<A : ToSocketAddrs>(&self, buf : &[u8], addr : A) -> Result<usize>;
   fn  start_timer(&self, timeout : Duration, id : u32);
   fn cancel_timer(&self, id : u32);
 }
 
-trait TimedDatagramProtocolRecv {
+pub trait TimedDatagramProtocolRecv {
   fn recv_datagram<A : ToSocketAddrs>(&self, now : Instant, buf : &[u8], addr : A);
   fn timeout(&self, now : Instant, id : u32);
 }
