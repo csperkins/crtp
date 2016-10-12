@@ -27,8 +27,6 @@ extern crate byteorder;
 mod packets;
 mod timed_datagram_protocol;
 
-
 fn main() {
 }
 
-// vim: set ts=2 sw=2 tw=0 et ai:
