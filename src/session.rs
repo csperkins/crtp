@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2016 University of Glasgow
+// Copyright (c) 2016 University of Glasgow
 // All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or without
@@ -22,16 +22,59 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-extern crate byteorder;
+use std::net::ToSocketAddrs;
+use std::time::{Duration, Instant};
 
-mod packets;
-mod timed_datagram_protocol;
-mod session;
+use timed_datagram_protocol::*;
 
-fn main() {
-    let session = session::Inactive::new();
+// ================================================================================================
 
-    let active = session.join();
-    let leaving = active.leave();
+pub struct Inactive {
 }
 
+impl Inactive {
+    pub fn new() -> Self {
+        Inactive {
+        }
+    }
+
+    pub fn join(self) -> Active {
+        Active {
+        }
+    }
+}
+
+// ================================================================================================
+
+struct Active {
+}
+
+impl Active {
+    pub fn leave(self) -> Leaving {
+        Leaving {
+        }
+    }
+}
+
+impl TimedDatagramProtocolRecv for Active {
+    fn recv_datagram<A : ToSocketAddrs>(&self, now : Instant, buf : &[u8], addr : A) {
+    }
+
+    fn timeout(&self, now : Instant, id : u32) {
+    }
+}
+
+// ================================================================================================
+
+struct Leaving {
+}
+
+impl TimedDatagramProtocolRecv for Leaving {
+    fn recv_datagram<A : ToSocketAddrs>(&self, now : Instant, buf : &[u8], addr : A) {
+    }
+
+    fn timeout(&self, now : Instant, id : u32) {
+    }
+}
+
+// ================================================================================================
