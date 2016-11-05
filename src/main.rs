@@ -28,8 +28,10 @@ mod packets;
 mod timed_datagram_protocol;
 mod session;
 
+use session::*;
+
 fn main() {
-    let session = session::Inactive::new();
+    let session = Session::<Inactive>::new();
 
     let active = session.join();
     let leaving = active.leave();

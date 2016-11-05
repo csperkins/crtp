@@ -27,36 +27,36 @@ use std::time::{Duration, Instant};
 
 use timed_datagram_protocol::*;
 
-// ================================================================================================
+pub struct Inactive;
+pub struct Active;
+pub struct Leaving;
 
-pub struct Inactive {
-}
-
-impl Inactive {
-    pub fn new() -> Self {
-        Inactive {
-        }
-    }
-
-    pub fn join(self) -> Active {
-        Active {
-        }
-    }
+pub struct Session<State> {
+    state : State,
+    ssrc  : u32
 }
 
 // ================================================================================================
 
-struct Active {
-}
+impl Session<Inactive> {
+    pub fn new() -> Session<Inactive> {
+        unimplemented!();
+    }
 
-impl Active {
-    pub fn leave(self) -> Leaving {
-        Leaving {
-        }
+    pub fn join(self) -> Session<Active> {
+        unimplemented!();
     }
 }
 
-impl TimedDatagramProtocolRecv for Active {
+// ================================================================================================
+
+impl Session<Active> {
+    pub fn leave(self) -> Session<Leaving> {
+        unimplemented!();
+    }
+}
+
+impl TimedDatagramProtocolRecv for Session<Active> {
     fn recv_datagram<A : ToSocketAddrs>(&self, now : Instant, buf : &[u8], addr : A) {
     }
 
@@ -66,10 +66,10 @@ impl TimedDatagramProtocolRecv for Active {
 
 // ================================================================================================
 
-struct Leaving {
+impl Session<Leaving> {
 }
 
-impl TimedDatagramProtocolRecv for Leaving {
+impl TimedDatagramProtocolRecv for Session<Leaving> {
     fn recv_datagram<A : ToSocketAddrs>(&self, now : Instant, buf : &[u8], addr : A) {
     }
 
