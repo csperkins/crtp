@@ -62,9 +62,11 @@ impl <'a> Session<'a, Active> {
     }
 
     fn recv_datagram(&self, now : Instant, buf : &[u8], addr : SocketAddr) {
+        unimplemented!();
     }
 
     fn timeout(&self, now : Instant, timer : u32) {
+        unimplemented!();
     }
 }
 
@@ -72,9 +74,11 @@ impl <'a> Session<'a, Active> {
 
 impl <'a> Session<'a, Leaving> {
     fn recv_datagram(&self, now : Instant, buf : &[u8], addr : SocketAddr) {
+        unimplemented!();
     }
 
     fn timeout(&self, now : Instant, timer : u32) {
+        unimplemented!();
     }
 }
 

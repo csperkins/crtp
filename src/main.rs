@@ -25,7 +25,6 @@
 extern crate byteorder;
 
 mod packets;
-mod timed_datagram_protocol;
 mod session;
 
 use session::*;
