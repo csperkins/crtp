@@ -22,58 +22,59 @@
 // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::net::ToSocketAddrs;
+use std::io::Result;
+use std::net::SocketAddr;
 use std::time::{Duration, Instant};
-
-use timed_datagram_protocol::*;
 
 pub struct Inactive;
 pub struct Active;
 pub struct Leaving;
 
-pub struct Session<State> {
-    state : State,
-    ssrc  : u32
+pub trait IoTimer {
+  fn send_datagram(&self, buf : &[u8], addr : SocketAddr) -> Result<usize>;
+  fn   start_timer(&self, id : u32, timeout : Duration);
+  fn  cancel_timer(&self, id : u32);
+}
+
+pub struct Session<'a, State> {
+    iotimer : &'a IoTimer,
+    state   : State,
+    ssrc    : u32
 }
 
 // ================================================================================================
 
-impl Session<Inactive> {
-    pub fn new() -> Session<Inactive> {
+impl <'a> Session<'a, Inactive> {
+    pub fn new(iotimer : &'a IoTimer) -> Session<'a, Inactive> {
         unimplemented!();
     }
 
-    pub fn join(self) -> Session<Active> {
+    pub fn join(self) -> Session<'a, Active> {
         unimplemented!();
-    }
-}
-
-// ================================================================================================
-
-impl Session<Active> {
-    pub fn leave(self) -> Session<Leaving> {
-        unimplemented!();
-    }
-}
-
-impl TimedDatagramProtocolRecv for Session<Active> {
-    fn recv_datagram<A : ToSocketAddrs>(&self, now : Instant, buf : &[u8], addr : A) {
-    }
-
-    fn timeout(&self, now : Instant, id : u32) {
     }
 }
 
 // ================================================================================================
 
-impl Session<Leaving> {
-}
-
-impl TimedDatagramProtocolRecv for Session<Leaving> {
-    fn recv_datagram<A : ToSocketAddrs>(&self, now : Instant, buf : &[u8], addr : A) {
+impl <'a> Session<'a, Active> {
+    pub fn leave(self) -> Session<'a, Leaving> {
+        unimplemented!();
     }
 
-    fn timeout(&self, now : Instant, id : u32) {
+    fn recv_datagram(&self, now : Instant, buf : &[u8], addr : SocketAddr) {
+    }
+
+    fn timeout(&self, now : Instant, timer : u32) {
+    }
+}
+
+// ================================================================================================
+
+impl <'a> Session<'a, Leaving> {
+    fn recv_datagram(&self, now : Instant, buf : &[u8], addr : SocketAddr) {
+    }
+
+    fn timeout(&self, now : Instant, timer : u32) {
     }
 }
 
