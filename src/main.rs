@@ -23,16 +23,40 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern crate byteorder;
+extern crate mio;
 
 mod packets;
 mod session;
 
 use session::*;
+use mio::*;
+use mio::udp::*;
+use std::str::FromStr;
+
+const TOKEN : mio::Token = mio::Token(0);
 
 fn main() {
-    let session = Session::<Inactive>::new();
+//    let session = Session::<Inactive>::new();
+//
+//    let active = session.join();
+//    let leaving = active.leave();
 
-    let active = session.join();
-    let leaving = active.leave();
+    let address = "0.0.0.0:2223".parse().unwrap();
+    let network = UdpSocket::bind(&address).unwrap();
+    network.join_multicast_v4(&std::net::Ipv4Addr::from_str("224.2.2.2").unwrap(), 
+                              &std::net::Ipv4Addr::from_str("0.0.0.0").unwrap());
+
+    let poll = Poll::new().unwrap();
+    let mut events = Events::with_capacity(1024);
+
+    poll.register(&network, TOKEN, Ready::readable(), PollOpt::edge()).unwrap();
+
+    loop {
+        poll.poll(&mut events, None).unwrap();
+
+        for event in &events {
+            println!("got event");
+        }
+    }
 }
 
