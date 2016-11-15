@@ -55,7 +55,12 @@ fn main() {
         poll.poll(&mut events, None).unwrap();
 
         for event in &events {
-            println!("got event");
+            match event.token() {
+                TOKEN => {
+                    println!("got event");
+                }
+                _ => panic!("event with unexpected token")
+            }
         }
     }
 }
