@@ -29,15 +29,61 @@ mod packets;
 mod session;
 
 use session::*;
+use std::io::Result;
+use std::str::FromStr;
+use std::net::SocketAddr;
+use std::time::{Duration, Instant};
 use mio::*;
 use mio::udp::*;
-use std::str::FromStr;
 
 const TOKEN : mio::Token = mio::Token(0);
 
+// =====================
+
+struct NetworkMio {
+
+}
+
+impl NetworkMio {
+    fn new() -> Self {
+        unimplemented!();
+    }
+}
+
+impl SendDatagram for NetworkMio {
+  fn send_datagram(&self, buf : &[u8], addr : SocketAddr) -> Result<usize> {
+      unimplemented!();
+  }
+}
+
+// =====================
+
+struct TimersMio {
+}
+
+impl TimersMio {
+    fn new() -> Self {
+        unimplemented!();
+    }
+}
+
+impl Timers for TimersMio {
+  fn   start(&self, id : u32, timeout : Duration) {
+      unimplemented!();
+  }
+
+  fn  cancel(&self, id : u32) {
+      unimplemented!();
+  }
+}
+
+// =====================
+
 fn main() {
-//    let session = Session::<Inactive>::new();
-//
+    let network = NetworkMio::new();
+    let timers  = TimersMio::new();
+    let session = Session::<Inactive>::new(&network, &timers);
+
 //    let active = session.join();
 //    let leaving = active.leave();
 
