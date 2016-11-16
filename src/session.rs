@@ -30,14 +30,18 @@ pub struct Inactive;
 pub struct Active;
 pub struct Leaving;
 
-pub trait IoTimer {
+pub trait SendDatagram {
   fn send_datagram(&self, buf : &[u8], addr : SocketAddr) -> Result<usize>;
-  fn   start_timer(&self, id : u32, timeout : Duration);
-  fn  cancel_timer(&self, id : u32);
+}
+
+pub trait Timers {
+  fn   start(&self, id : u32, timeout : Duration);
+  fn  cancel(&self, id : u32);
 }
 
 pub struct Session<'a, State> {
-    iotimer : &'a IoTimer,
+    network : &'a SendDatagram,
+    timers  : &'a Timers,
     state   : State,
     ssrc    : u32
 }
@@ -45,8 +49,13 @@ pub struct Session<'a, State> {
 // ================================================================================================
 
 impl <'a> Session<'a, Inactive> {
-    pub fn new(iotimer : &'a IoTimer) -> Session<'a, Inactive> {
-        unimplemented!();
+    pub fn new(network: &'a SendDatagram, timers: &'a Timers) -> Session<'a, Inactive> {
+        Session {
+            network : network,
+            timers  : timers,
+            state   : Inactive,
+            ssrc    : 0             // FIXME
+        }
     }
 
     pub fn join(self) -> Session<'a, Active> {
