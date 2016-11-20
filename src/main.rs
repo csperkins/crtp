@@ -31,7 +31,7 @@ mod session;
 use session::*;
 use std::io::Result;
 use std::str::FromStr;
-use std::net::SocketAddr;
+use std::net::{SocketAddr, IpAddr, Ipv4Addr};
 use std::time::{Duration, Instant};
 use mio::*;
 use mio::udp::*;
@@ -41,12 +41,19 @@ const TOKEN : mio::Token = mio::Token(0);
 // =====================
 
 struct NetworkMio {
-
+    socket : UdpSocket
 }
 
 impl NetworkMio {
-    fn new() -> Self {
-        unimplemented!();
+    fn new(group : &Ipv4Addr, port : u16) -> Self {
+        let ip = IpAddr::V4(Ipv4Addr::new(0,0,0,0));
+        let sockaddr = SocketAddr::new(ip, port);
+        let socket = UdpSocket::bind(&sockaddr).unwrap();
+
+        socket.join_multicast_v4(group, &Ipv4Addr::new(0,0,0,0)).unwrap();
+        NetworkMio {
+            socket : socket
+        }
     }
 }
 
@@ -63,7 +70,8 @@ struct TimersMio {
 
 impl TimersMio {
     fn new() -> Self {
-        unimplemented!();
+        TimersMio {
+        }
     }
 }
 
@@ -80,22 +88,20 @@ impl Timers for TimersMio {
 // =====================
 
 fn main() {
-    let network = NetworkMio::new();
+    let address = "224.2.2.2".parse().unwrap();
+    let port    = 2223;
+
+    let network = NetworkMio::new(&address, port);
     let timers  = TimersMio::new();
     let session = Session::<Inactive>::new(&network, &timers);
 
 //    let active = session.join();
 //    let leaving = active.leave();
 
-    let address = "0.0.0.0:2223".parse().unwrap();
-    let network = UdpSocket::bind(&address).unwrap();
-    network.join_multicast_v4(&std::net::Ipv4Addr::from_str("224.2.2.2").unwrap(), 
-                              &std::net::Ipv4Addr::from_str("0.0.0.0").unwrap());
-
     let poll = Poll::new().unwrap();
     let mut events = Events::with_capacity(1024);
 
-    poll.register(&network, TOKEN, Ready::readable(), PollOpt::edge()).unwrap();
+    poll.register(&network.socket, TOKEN, Ready::readable(), PollOpt::edge()).unwrap();
 
     loop {
         poll.poll(&mut events, None).unwrap();
