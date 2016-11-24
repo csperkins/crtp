@@ -40,26 +40,19 @@ const TOKEN : mio::Token = mio::Token(0);
 
 // =====================
 
-struct NetworkMio {
-    socket : UdpSocket
-}
-
-impl NetworkMio {
-    fn new(group : &Ipv4Addr, port : u16) -> Self {
-        let ip = IpAddr::V4(Ipv4Addr::new(0,0,0,0));
-        let sockaddr = SocketAddr::new(ip, port);
-        let socket = UdpSocket::bind(&sockaddr).unwrap();
-
-        socket.join_multicast_v4(group, &Ipv4Addr::new(0,0,0,0)).unwrap();
-        NetworkMio {
-            socket : socket
-        }
-    }
-}
-
-impl SendDatagram for NetworkMio {
+impl SendDatagram for UdpSocket {
   fn send_datagram(&self, buf : &[u8], addr : SocketAddr) -> Result<usize> {
-      unimplemented!();
+      match self.send_to(buf, &addr) {
+          Ok(None) => {
+              Ok(0)     // EWOULDBLOCK
+          }
+          Ok(Some(size)) => {
+              Ok(size)
+          }
+          Err(e) => {
+              Err(e)
+          }
+      }
   }
 }
 
@@ -88,12 +81,16 @@ impl Timers for TimersMio {
 // =====================
 
 fn main() {
-    let address = "224.2.2.2".parse().unwrap();
     let port    = 2223;
 
-    let network = NetworkMio::new(&address, port);
+    let ip = IpAddr::V4(Ipv4Addr::new(0,0,0,0));
+    let sockaddr = SocketAddr::new(ip, port);
+    let socket = UdpSocket::bind(&sockaddr).unwrap();
+
+    socket.join_multicast_v4(&Ipv4Addr::new(224,2,2,2), &Ipv4Addr::new(0,0,0,0)).unwrap();
+
     let timers  = TimersMio::new();
-    let session = Session::<Inactive>::new(&network, &timers);
+    let session = Session::<Inactive>::new(&socket, &timers);
 
 //    let active = session.join();
 //    let leaving = active.leave();
@@ -101,7 +98,7 @@ fn main() {
     let poll = Poll::new().unwrap();
     let mut events = Events::with_capacity(1024);
 
-    poll.register(&network.socket, TOKEN, Ready::readable(), PollOpt::edge()).unwrap();
+    poll.register(&socket, TOKEN, Ready::readable(), PollOpt::edge()).unwrap();
 
     loop {
         poll.poll(&mut events, None).unwrap();
