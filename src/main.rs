@@ -35,8 +35,10 @@ use std::net::{SocketAddr, IpAddr, Ipv4Addr};
 use std::time::{Duration, Instant};
 use mio::*;
 use mio::udp::*;
+use mio::timer::Timer;
 
-const TOKEN : mio::Token = mio::Token(0);
+const SOCKET_TOKEN : mio::Token = mio::Token(0);
+const  TIMER_TOKEN : mio::Token = mio::Token(1);
 
 // =====================
 
@@ -58,24 +60,14 @@ impl SendDatagram for UdpSocket {
 
 // =====================
 
-struct TimersMio {
-}
-
-impl TimersMio {
-    fn new() -> Self {
-        TimersMio {
-        }
+impl Timeout for Timer<TimerId> {
+    fn set_timeout(&mut self, timeout_after : Duration, id : TimerId) {
+        unimplemented!();
     }
-}
 
-impl Timers for TimersMio {
-  fn   start(&self, id : u32, timeout : Duration) {
-      unimplemented!();
-  }
-
-  fn  cancel(&self, id : u32) {
-      unimplemented!();
-  }
+    fn cancel_timeout(&mut self, id : TimerId) {
+        unimplemented!();
+    }
 }
 
 // =====================
@@ -89,8 +81,8 @@ fn main() {
 
     socket.join_multicast_v4(&Ipv4Addr::new(224,2,2,2), &Ipv4Addr::new(0,0,0,0)).unwrap();
 
-    let timers  = TimersMio::new();
-    let session = Session::<Inactive>::new(&socket, &timers);
+    let mut timer = timer::Builder::default().tick_duration(Duration::from_millis(1)).build();
+//    let session = Session::<Inactive>::new(&socket, &timer);
 
 //    let active = session.join();
 //    let leaving = active.leave();
@@ -98,15 +90,22 @@ fn main() {
     let poll = Poll::new().unwrap();
     let mut events = Events::with_capacity(1024);
 
-    poll.register(&socket, TOKEN, Ready::readable(), PollOpt::edge()).unwrap();
+    poll.register(&socket, SOCKET_TOKEN, Ready::readable(), PollOpt::edge()).unwrap();
+    poll.register(&timer,   TIMER_TOKEN, Ready::readable(), PollOpt::edge()).unwrap();
+
+    timer.set_timeout(Duration::from_millis(5000), TimerId::RtcpTimer);
 
     loop {
         poll.poll(&mut events, None).unwrap();
 
         for event in &events {
             match event.token() {
-                TOKEN => {
-                    println!("got event");
+                SOCKET_TOKEN => {
+                    println!("got socket event");
+                }
+                TIMER_TOKEN => {
+                    println!("got timer event");
+                    timer.set_timeout(Duration::from_millis(5000), TimerId::RtcpTimer);
                 }
                 _ => panic!("event with unexpected token")
             }

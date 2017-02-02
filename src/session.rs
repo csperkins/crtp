@@ -31,17 +31,21 @@ pub struct Active;
 pub struct Leaving;
 
 pub trait SendDatagram {
-  fn send_datagram(&self, buf : &[u8], addr : SocketAddr) -> Result<usize>;
+    fn send_datagram(&self, buf : &[u8], addr : SocketAddr) -> Result<usize>;
 }
 
-pub trait Timers {
-  fn   start(&self, id : u32, timeout : Duration);
-  fn  cancel(&self, id : u32);
+pub enum TimerId {
+    RtcpTimer
 }
 
-pub struct Session<'a, State> {
+pub trait Timeout {
+    fn    set_timeout(&mut self, timeout_after : Duration, id : TimerId);
+    fn cancel_timeout(&mut self, id : TimerId);
+}
+
+pub struct Session<'a, State, > {
     network : &'a SendDatagram,
-    timers  : &'a Timers,
+    timeout : &'a Timeout,
     state   : State,
     ssrc    : u32
 }
@@ -49,10 +53,10 @@ pub struct Session<'a, State> {
 // ================================================================================================
 
 impl <'a> Session<'a, Inactive> {
-    pub fn new(network: &'a SendDatagram, timers: &'a Timers) -> Session<'a, Inactive> {
+    pub fn new(network: &'a SendDatagram, timeout: &'a Timeout) -> Session<'a, Inactive> {
         Session {
             network : network,
-            timers  : timers,
+            timeout : timeout,
             state   : Inactive,
             ssrc    : 0             // FIXME
         }
